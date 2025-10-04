@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Law MCQs Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for professional look and feel */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f7; /* Soft light background for elegance */
+            color: #1f2937;
+        }
+        /* New Primary Color: Deep Authoritative Blue */
+        .primary-bg { background-color: #1a237e; }
+        .primary-text { color: #1a237e; }
+        .primary-border { border-color: #1a237e; }
+        
+        /* New Accent Color: Subtle Gold/Amber */
+        .accent-bg { background-color: #fbc02d; }
+        .accent-hover-bg { background-color: #f57f17; }
+        .accent-text { color: #fbc02d; }
+
+        .mcq-card {
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.1), 0 5px 15px -5px rgba(0, 0, 0, 0.05); /* Premium shadow */
+            transition: transform 0.2s, box-shadow 0.3s;
+        }
+        .mcq-option {
+            transition: all 0.2s ease-in-out;
+            display: flex;
+            align-items: flex-start; /* Align text to top for multi-line options */
+            text-align: left;
+        }
+        .mcq-option:not(.disabled):hover {
+            background-color: #e3e8ed; /* Lighter background on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        .mcq-option.disabled {
+            cursor: default;
+        }
+
+        /* --- Custom Radio Indicator Styles --- */
+        .custom-radio {
+            width: 1.25rem; 
+            height: 1.25rem; 
+            border-radius: 9999px; 
+            border: 2px solid #9ca3af; 
+            margin-right: 0.75rem; 
+            flex-shrink: 0;
+            margin-top: 0.25rem; /* Slightly move radio down to align with text baseline */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s ease-in-out;
+        }
+        .custom-radio-dot {
+            width: 0.5rem; 
+            height: 0.5rem; 
+            border-radius: 9999px;
+            background-color: transparent; 
+            transition: all 0.2s ease-in-out;
+        }
+        
+        /* SELECTED (Pre-feedback) - Accent color for selection */
+        .selected {
+            background-color: #fff9e6; /* Very light accent background */
+            border-color: #fbc02d;
+        }
+        .selected .custom-radio {
+            border-color: #fbc02d; 
+        }
+        .selected .custom-radio-dot {
+            background-color: #fbc02d; 
+        }
+
+        /* CORRECT (Submitted/Feedback) - Professional Green */
+        .correct {
+            background-color: #e5f7ed;
+            border-color: #059669;
+            font-weight: 600;
+        }
+        .correct .custom-radio {
+            border-color: #059669; 
+        }
+        .correct .custom-radio-dot {
+            background-color: #059669; 
+        }
+
+        /* INCORRECT (Submitted/Feedback) - Professional Red */
+        .incorrect {
+            background-color: #fde8e8;
+            border-color: #dc2626;
+            font-weight: 600;
+        }
+        .incorrect.selected .custom-radio {
+            border-color: #dc2626; 
+        }
+        .incorrect.selected .custom-radio-dot {
+            background-color: #dc2626; 
+        }
+        
+        /* Act Card Styling - Professional and Trendy Look */
+        .act-card {
+            transition: all 0.2s ease-in-out;
+            border-radius: 0.75rem; /* Smoother rounding */
+            border: 1px solid #e5e7eb;
+            background-color: #ffffff;
+        }
+        .act-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 30px -8px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Enhancement for Quiz Section on Large Screens to center the card vertically */
+        @media (min-width: 1024px) {
+            .quiz-content-wrapper {
+                /* Ensures the quiz content centers vertically in the available screen space */
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+                flex-grow: 1; /* Allows the wrapper to fill the parent height */
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header and Main Navigation - Deep Blue Primary -->
+    <header class="primary-bg shadow-lg sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 md:px-6">
+            <!-- Top Bar -->
+            <div class="flex justify-between items-center py-4">
+                <!-- LOGO/TITLE IS NOW CLICKABLE TO NAVIGATE HOME -->
+                <h1 class="text-3xl font-extrabold text-white tracking-wide cursor-pointer" onclick="safeNavigate('home')">LexPro Quiz</h1>
+                <div class="space-x-4 flex items-center">
+                    <p id="user-display" class="text-sm text-indigo-200 hidden md:block"></p>
+                    <button id="admin-mode-btn" class="px-4 py-2 bg-indigo-700 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition duration-150 shadow-md">Admin Mode</button>
+                </div>
+            </div>
+            
+            <!-- Navigation Tabs (Responsive: uses overflow-x-auto for narrow screens) -->
+            <nav id="main-nav" class="flex border-t border-indigo-700 overflow-x-auto whitespace-nowrap">
+                <!-- NAV TABS USE safeNavigate FOR CONFIRMATION -->
+                <button id="nav-home" onclick="safeNavigate('home')" class="nav-tab px-6 py-3 text-base font-bold transition duration-150 border-b-2 text-white bg-indigo-800 border-amber-400">Home Page</button>
+                <button id="nav-bare-acts" onclick="safeNavigate('bareActs')" class="nav-tab px-6 py-3 text-base font-medium transition duration-150 border-b-2 border-transparent text-indigo-300 hover:text-white hover:bg-indigo-800">Bare Acts</button>
+                <button id="nav-aibe" onclick="safeNavigate('aibe')" class="nav-tab px-6 py-3 text-base font-medium transition duration-150 border-b-2 border-transparent text-indigo-300 hover:text-white hover:bg-indigo-800">AIBE</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Container: The min-height calculation here ensures vertical space is filled on desktop -->
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 md:p-6 lg:min-h-[calc(100vh-160px)]">
+
+        <!-- Loading / Syncing State -->
+        <div id="loading-state" class="text-center mb-6 py-3 border-4 border-amber-500 bg-amber-50 rounded-xl hidden">
+            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-amber-600 inline-block mr-3"></div>
+            <p class="inline-block font-bold text-amber-800">📡 Syncing with cloud data...</p>
+        </div>
+
+        <!-- --- HOME PAGE SECTION --- -->
+        <section id="home-page-section" class="hidden">
+            <div class="p-8 primary-bg rounded-xl mb-10 shadow-xl">
+                <h2 class="text-4xl md:text-5xl font-extrabold text-white mb-3">Master Your Legal Knowledge.</h2>
+                <p class="text-indigo-200 text-lg md:text-xl">Targeted practice for bare acts and bar examinations.</p>
+            </div>
+
+            <h3 class="text-3xl font-bold primary-text mb-6">Featured Practice Sets</h3>
+            <div id="featured-acts-container" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Featured acts and AIBE rendered here -->
+            </div>
+
+            <div id="home-action-buttons" class="mt-12 text-center">
+                <!-- Action buttons rendered by JS now -->
+            </div>
+        </section>
+
+        <!-- --- BARE ACTS SECTION (Full List) --- -->
+        <section id="bare-acts-section" class="hidden">
+            <h2 class="text-3xl font-extrabold primary-text mb-6 border-b pb-2 primary-border">Complete Library of Bare Acts</h2>
+            <div id="all-acts-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- All acts rendered here -->
+            </div>
+            <p id="no-acts-message" class="hidden text-center text-xl text-gray-500 mt-12">No Acts have been added yet.</p>
+        </section>
+
+        <!-- --- AIBE SECTION (Year-based List) --- -->
+        <section id="aibe-section" class="hidden">
+            <h2 class="text-3xl font-extrabold primary-text mb-6 border-b pb-2 primary-border">All India Bar Examination (AIBE) Year Papers</h2>
+            <div id="all-aibe-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- All AIBE years rendered here -->
+            </div>
+            <p id="no-aibe-message" class="hidden text-center text-xl text-gray-500 mt-12">No AIBE papers have been added yet.</p>
+        </section>
+
+        <!-- --- QUIZ SECTION (Active MCQ Flow) - VERTICALLY COMPACT ON PC --- -->
+        <section id="quiz-section" class="hidden">
+             <!-- quiz-content-wrapper is the key for vertical centering on large screens -->
+             <div class="quiz-content-wrapper p-4 md:p-0">
+                <!-- Card width is max-w-xl. Padding is reduced on lg screens (lg:p-6) -->
+                <div id="mcq-container" class="max-w-xl mx-auto w-full bg-white p-4 lg:p-6 sm:p-8 rounded-xl mcq-card border-t-4 primary-border">
+                    <!-- Question and controls will be rendered here -->
+                    <div id="question-area"></div>
+                    
+                    <!-- Control Panel for Single Question Flow (Reduced vertical margin/padding) -->
+                    <div class="mt-6 pt-3 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center">
+                        <p id="question-progress" class="text-lg font-bold text-amber-600 mb-4 sm:mb-0"></p>
+                        
+                        <!-- Action button for Next Question/View Results -->
+                        <button id="action-button" onclick="handleAction()" disabled class="w-full sm:w-auto px-6 py-3 primary-bg text-white rounded-xl font-semibold hover:bg-indigo-700 transition duration-150 disabled:opacity-50 shadow-lg hover:shadow-xl">
+                            Next Question
+                        </button>
+                    </div>
+                    <div id="feedback-message" class="mt-4 p-3 rounded-xl font-bold hidden border"></div>
+                </div>
+                
+                <!-- Tighter container for the quiz results -->
+                <div id="quiz-results" class="hidden max-w-xl mx-auto w-full bg-white p-4 sm:p-10 rounded-xl mcq-card text-center border-t-4 primary-border">
+                    <!-- Results will be displayed here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- --- ADMIN MODE SECTION (Hidden by default) --- -->
+        <section id="admin-section" class="hidden my-8 p-4 sm:p-8 bg-white rounded-xl mcq-card border border-indigo-200">
+            <h2 class="text-3xl font-extrabold primary-text mb-6 border-b pb-2 border-indigo-200">Administration Dashboard</h2>
+            <div id="admin-auth" class="space-y-4">
+                <!-- Password input updated to remove the password from the placeholder -->
+                <input type="password" id="admin-password" placeholder="Enter Admin Password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-amber-500 focus:border-amber-500">
+                <button onclick="authenticateAdmin()" class="w-full primary-bg text-white p-3 rounded-lg font-semibold hover:bg-indigo-700 transition duration-150 shadow-md">Unlock Admin Features</button>
+                <p id="admin-auth-message" class="text-red-500 text-sm"></p>
+            </div>
+
+            <div id="admin-controls" class="hidden space-y-8">
+                <!-- Admin Tabs for switching between Acts and AIBE management -->
+                <div class="flex border-b border-gray-200">
+                    <button id="admin-tab-acts" onclick="setAdminMode('acts')" class="admin-tab px-5 py-3 text-base font-semibold transition duration-150 border-b-2 primary-border primary-text">Manage Bare Acts</button>
+                    <button id="admin-tab-aibe" onclick="setAdminMode('aibe')" class="admin-tab px-5 py-3 text-base font-semibold transition duration-150 border-b-2 border-transparent text-gray-500 hover:text-gray-700">Manage AIBE Years</button>
+                </div>
+
+                <!-- ADMIN: BARE ACTS MANAGEMENT -->
+                <div id="admin-acts-management">
+                    <h3 class="text-2xl font-bold primary-text mb-4">Bare Acts Content Management</h3>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Add New Act Form -->
+                        <div class="p-5 border border-gray-200 rounded-xl bg-gray-50 shadow-sm">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-3 border-b pb-2">Add New Act</h3>
+                            <input type="text" id="new-act-name" placeholder="New Act Name (e.g., Evidence Act, 1872)" class="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-amber-500 focus:border-amber-500">
+                            <button onclick="addNewAct()" class="w-full bg-green-600 text-white p-3 rounded-lg font-semibold hover:bg-green-700 transition duration-150 shadow-md">Add Act</button>
+                        </div>
+
+                        <!-- Select/Delete Act -->
+                        <div class="p-5 border border-gray-200 rounded-xl bg-red-50 shadow-sm">
+                             <h3 class="text-xl font-semibold text-gray-800 mb-3 border-b pb-2">Delete Act</h3>
+                             <select id="act-selector" class="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-amber-500 focus:border-amber-500" onchange="updateAdminActName()">
+                                <!-- Options populated by JS -->
+                             </select>
+                             <button onclick="confirmDeleteAct()" id="delete-act-btn" class="w-full bg-red-600 text-white p-3 rounded-lg font-semibold hover:bg-red-700 transition duration-150 disabled:opacity-50 shadow-md" disabled>
+                                Delete Selected Act
+                             </button>
+                        </div>
+                    </div>
+                    <!-- Add New Question Form -->
+                    <div class="p-5 border border-gray-200 rounded-xl bg-indigo-50 mt-8 shadow-md">
+                        <h3 class="text-xl font-semibold primary-text mb-3 border-b pb-2">Add New Question to: <span id="current-admin-act-name" class="font-bold accent-text"></span></h3>
+
+                        <label class="block text-gray-700 font-medium mb-2">
+                            Paste one or multiple questions using the required format below.
+                            <span class="font-normal text-sm text-gray-600 block mt-1">Format example: **Q)** text, **A:** option, **B:** option, **C:** option, **D:** option, **as)** C. (Q/numbers and Ans/as accepted)</span>
+                        </label>
+                        <textarea id="new-question-superpower-input" placeholder="1) What section defines 'murder'?
+A: Sec 299
+B: Sec 300
+C: Sec 302
+D: Sec 304
+as) B" rows="8" class="font-mono w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-amber-500 focus:border-amber-500"></textarea>
+                        
+
+                        <button onclick="addNewQuestion('acts')" class="w-full primary-bg text-white p-3 rounded-lg font-semibold hover:bg-indigo-700 transition duration-150 shadow-md">Add Question(s)</button>
+                    </div>
+                    
+                    <!-- Existing Questions List (for editing/review) -->
+                    <div class="p-5 border border-gray-200 rounded-xl bg-white mt-8 shadow-md">
+                        <h3 class="text-xl font-semibold primary-text mb-3 border-b pb-2">Existing Questions in <span id="list-act-name" class="font-bold accent-text"></span></h3>
+                        <div id="existing-questions-list" class="space-y-4 text-sm">
+                            <p class="text-gray-500">Select an Act above to view its questions.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ADMIN: AIBE MANAGEMENT -->
+                <div id="admin-aibe-management" class="hidden">
+                    <h3 class="text-2xl font-bold primary-text mb-4">AIBE Year Paper Management</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <!-- Add New AIBE Year Set -->
+                        <div class="p-5 border border-gray-200 rounded-xl bg-gray-50 shadow-sm">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-3 border-b pb-2">Add New AIBE Set</h3>
+                            <input type="number" id="new-aibe-year" placeholder="Year (e.g., 2024)" class="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-amber-500 focus:border-amber-500">
+                            <input type="text" id="new-aibe-title" placeholder="Display Title (e.g., AIBE 2024 Solved)" class="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-amber-500 focus:border-amber-500">
+                            <button onclick="addNewAIBEYear()" class="w-full bg-green-600 text-white p-3 rounded-lg font-semibold hover:bg-green-700 transition duration-150 shadow-md">Add AIBE Year Set</button>
+                        </div>
+
+                        <!-- Select/Delete AIBE Year -->
+                        <div class="p-5 border border-gray-200 rounded-xl bg-red-50 shadow-sm">
+                             <h3 class="text-xl font-semibold text-gray-800 mb-3 border-b pb-2">Delete AIBE Set</h3>
+                             <select id="aibe-selector" class="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-amber-500 focus:border-amber-500" onchange="updateAdminAIBEName()">
+                                <!-- Options populated by JS -->
+                             </select>
+                             <button onclick="confirmDeleteAIBEYear()" id="delete-aibe-btn" class="w-full bg-red-600 text-white p-3 rounded-lg font-semibold hover:bg-red-700 transition duration-150 disabled:opacity-50 shadow-md" disabled>
+                                Delete Selected AIBE Set
+                             </button>
+                        </div>
+                    </div>
+
+                    <!-- Add Questions to AIBE Year -->
+                     <div class="p-5 border border-gray-200 rounded-xl bg-indigo-50 shadow-md">
+                        <h3 class="text-xl font-semibold primary-text mb-3 border-b pb-2">Add New Question to: <span id="current-admin-aibe-name" class="font-bold accent-text"></span></h3>
+
+                        <label class="block text-gray-700 font-medium mb-2">
+                            Paste one or multiple questions using the required format below.
+                        </label>
+                        <textarea id="new-aibe-question-superpower-input" placeholder="1) Question text here?
+A: Option A
+B: Option B
+C: Option C
+D: Option D
+as) A" rows="8" class="font-mono w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-amber-500 focus:border-amber-500"></textarea>
+                        
+
+                        <button onclick="addNewQuestion('aibe')" class="w-full primary-bg text-white p-3 rounded-lg font-semibold hover:bg-indigo-700 transition duration-150 shadow-md">Add Question(s)</button>
+                    </div>
+
+                    <!-- Existing Questions List (for editing/review) -->
+                    <div class="p-5 border border-gray-200 rounded-xl bg-white mt-8 shadow-md">
+                        <h3 class="text-xl font-semibold primary-text mb-3 border-b pb-2">Existing Questions in <span id="list-aibe-name" class="font-bold accent-text"></span></h3>
+                        <div id="existing-aibe-questions-list" class="space-y-4 text-sm">
+                            <p class="text-gray-500">Select an AIBE Set to view its questions.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <p id="admin-status-message" class="text-center font-semibold mt-3"></p>
+            </div>
+        </section>
+
+        <!-- Custom Modal for Messages (No alert/confirm) -->
+        <div id="custom-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center p-4">
+            <div class="bg-white p-8 rounded-xl max-w-md w-full shadow-2xl">
+                <h3 id="modal-title" class="text-2xl font-bold primary-text mb-4 border-b pb-2"></h3>
+                <p id="modal-message" class="text-gray-700 mb-6"></p>
+                <div class="flex justify-end space-x-3">
+                    <button id="modal-cancel-btn" class="px-5 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition duration-150 hidden font-semibold">Cancel</button>
+                    <button id="modal-confirm-btn" class="px-5 py-2 primary-bg text-white rounded-lg hover:bg-indigo-700 transition duration-150 font-semibold">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Question Modal/Overlay -->
+        <div id="edit-modal-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 z-40 flex items-center justify-center p-4">
+            <div id="edit-modal-content" class="bg-white p-8 rounded-xl max-w-2xl w-full shadow-2xl overflow-y-auto max-h-screen">
+                <h3 class="text-2xl font-bold primary-text mb-6 border-b pb-2">Edit Question</h3>
+                <div class="space-y-4" id="edit-question-form">
+                    <input type="hidden" id="edit-mode-type"> <!-- 'acts' or 'aibe' -->
+                    <input type="hidden" id="edit-item-index">
+                    <input type="hidden" id="edit-q-index">
+
+                    <label class="block text-gray-700 font-semibold mb-1">Question Text</label>
+                    <textarea id="edit-question-text" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-amber-500 focus:border-amber-500"></textarea>
+                    
+                    <label class="block text-gray-700 font-semibold mb-1">Options</label>
+                    <input type="text" id="edit-option-0" placeholder="Option A" class="w-full p-3 border border-gray-300 rounded-lg mb-2 focus:ring-amber-500 focus:border-amber-500">
+                    <input type="text" id="edit-option-1" placeholder="Option B" class="w-full p-3 border border-gray-300 rounded-lg mb-2 focus:ring-amber-500 focus:border-amber-500">
+                    <input type="text" id="edit-option-2" placeholder="Option C" class="w-full p-3 border border-gray-300 rounded-lg mb-2 focus:ring-amber-500 focus:border-amber-500">
+                    <input type="text" id="edit-option-3" placeholder="Option D" class="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-amber-500 focus:border-amber-500">
+                    
+                    <label class="block text-gray-700 font-semibold mb-1">Correct Answer</label>
+                    <select id="edit-correct-answer-index" class="w-full p-3 border border-gray-300 rounded-lg mb-6 focus:ring-amber-500 focus:border-amber-500">
+                        <option value="0">A</option>
+                        <option value="1">B</option>
+                        <option value="2">C</option>
+                        <option value="3">D</option>
+                    </select>
+
+                    <div class="flex justify-end space-x-3">
+                        <button onclick="closeEditModal()" class="px-6 py-3 bg-gray-300 text-gray-800 rounded-lg font-semibold hover:bg-gray-400 transition duration-150">Cancel</button>
+                        <button onclick="saveEditedQuestion()" class="px-6 py-3 primary-bg text-white rounded-lg font-semibold hover:bg-indigo-700 transition duration-150">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="p-4 text-center text-sm text-gray-500 border-t mt-8 bg-white shadow-inner">
+        © 2025 LexPro Quiz Platform. Built for Legal Excellence.
+    </footer>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, getDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- GLOBAL SETUP & ENVIRONMENT CHECK ---
+
+        const isCanvasEnvironment = typeof __app_id !== 'undefined';
+        if (isCanvasEnvironment) {
+            setLogLevel('Debug');
+        }
+
+        const appId = isCanvasEnvironment ? __app_id : 'local-fallback-app';
+        const initialAuthToken = isCanvasEnvironment ? __initial_auth_token : null;
+
+        const defaultFirebaseConfig = {
+            apiKey: "AIzaSy_LOCAL_FALLBACK",
+            authDomain: "local-fallback.firebaseapp.com",
+            projectId: "local-fallback",
+        };
+        const firebaseConfig = isCanvasEnvironment && typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : defaultFirebaseConfig;
+
+        let app, db, auth;
+        let userId = null;
+        let isAuthReady = false;
+
+        const DATA_DOC_PATH = `/artifacts/${appId}/public/data/law_mcqs/data`; // Single document for all public data
+        const LOCAL_STORAGE_KEY = 'law_mcqs_local_data';
+
+        // --- STATE MANAGEMENT ---
+        let acts = []; // Stores Bare Acts
+        let aibeYears = []; // Stores AIBE Year sets
+        
+        // --- NEW CONSTANTS FOR HOME PAGE FEATURED ITEMS ---
+        const FEATURED_ACT_COUNT = 2; // Display 2 Acts
+        const FEATURED_AIBE_COUNT = 1; // Display 1 AIBE
+        // ----------------------------------------------------
+        
+        let currentQuizData = null; // The specific act or aibe year currently being quizzed
+        let currentActId = null; // The ID of the current item (Act or AIBE)
+        let currentItemIndex = 0; // The index of the current item in its respective array (acts or aibeYears)
+        let currentItemType = 'acts'; // 'acts' or 'aibe'
+        
+        let currentQuestionIndex = 0; 
+        let userAnswers = {}; 
+        let quizState = 'selection'; // 'selection', 'question', 'feedback', 'results'
+        let currentPage = 'home'; // 'home', 'bareActs', 'aibe', 'quiz', 'admin'
+        let adminMode = 'acts'; // 'acts' or 'aibe'
+        
+        // --- ADMIN PASSWORD UPDATED HERE ---
+        const ADMIN_PASSWORD = "LegalK@1";
+        // -----------------------------------
+
+        // --- KEYBOARD STATE ---
+        let keyboardSelectedIndex = -1; // -1 means no option is currently focused/selected by keyboard
+        
+        const elements = {
+            loadingState: document.getElementById('loading-state'),
+            // Page Sections
+            homePageSection: document.getElementById('home-page-section'),
+            bareActsSection: document.getElementById('bare-acts-section'),
+            aibeSection: document.getElementById('aibe-section'),
+            quizSection: document.getElementById('quiz-section'), 
+            adminSection: document.getElementById('admin-section'),
+            
+            // Quiz Elements
+            mcqContainer: document.getElementById('mcq-container'),
+            questionArea: document.getElementById('question-area'),
+            actionButton: document.getElementById('action-button'), 
+            feedbackMessage: document.getElementById('feedback-message'),
+            questionProgress: document.getElementById('question-progress'),
+            quizResults: document.getElementById('quiz-results'),
+            
+            // Home/Bare Acts/AIBE Elements
+            featuredActsContainer: document.getElementById('featured-acts-container'),
+            // Added new element for the action buttons container
+            homeActionButtons: document.getElementById('home-action-buttons'), 
+            allActsContainer: document.getElementById('all-acts-container'),
+            allAibeContainer: document.getElementById('all-aibe-container'),
+            navHome: document.getElementById('nav-home'),
+            navBareActs: document.getElementById('nav-bare-acts'),
+            navAibe: document.getElementById('nav-aibe'),
+
+            // Admin Elements - General
+            userDisplay: document.getElementById('user-display'),
+            adminControls: document.getElementById('admin-controls'),
+            adminAuth: document.getElementById('admin-auth'),
+            adminAuthMessage: document.getElementById('admin-auth-message'),
+            adminStatusMessage: document.getElementById('admin-status-message'),
+
+            // Admin Elements - Acts
+            adminActsManagement: document.getElementById('admin-acts-management'),
+            actSelector: document.getElementById('act-selector'),
+            currentAdminActName: document.getElementById('current-admin-act-name'),
+            listActName: document.getElementById('list-act-name'),
+            existingQuestionsList: document.getElementById('existing-questions-list'),
+            deleteActBtn: document.getElementById('delete-act-btn'),
+            superpowerInput: document.getElementById('new-question-superpower-input'),
+
+            // Admin Elements - AIBE
+            adminAibeManagement: document.getElementById('admin-aibe-management'),
+            aibeSelector: document.getElementById('aibe-selector'),
+            currentAdminAibeName: document.getElementById('current-admin-aibe-name'),
+            listAibeName: document.getElementById('list-aibe-name'),
+            existingAibeQuestionsList: document.getElementById('existing-aibe-questions-list'),
+            deleteAibeBtn: document.getElementById('delete-aibe-btn'),
+            aibeSuperpowerInput: document.getElementById('new-aibe-question-superpower-input'),
+            
+            // Modals
+            modal: document.getElementById('custom-modal'),
+            modalTitle: document.getElementById('modal-title'),
+            modalMessage: document.getElementById('modal-message'),
+            modalConfirmBtn: document.getElementById('modal-confirm-btn'),
+            modalCancelBtn: document.getElementById('modal-cancel-btn'),
+            editModalOverlay: document.getElementById('edit-modal-overlay'),
+            editModeType: document.getElementById('edit-mode-type'),
+            editItemIndex: document.getElementById('edit-item-index'),
+        };
+
+        // --- UTILITY FUNCTIONS ---
+
+        /** Shows a custom modal instead of alert/confirm. */
+        window.showModal = function(title, message, isConfirm = false) {
+            return new Promise(resolve => {
+                elements.modalTitle.textContent = title;
+                elements.modalMessage.innerHTML = message; 
+                elements.modalCancelBtn.classList.toggle('hidden', !isConfirm);
+                elements.modal.classList.remove('hidden');
+
+                const confirmHandler = () => {
+                    elements.modal.classList.add('hidden');
+                    elements.modalConfirmBtn.removeEventListener('click', confirmHandler);
+                    elements.modalCancelBtn.removeEventListener('click', cancelHandler);
+                    resolve(true);
+                };
+
+                const cancelHandler = () => {
+                    elements.modal.classList.add('hidden');
+                    elements.modalConfirmBtn.removeEventListener('click', confirmHandler);
+                    elements.modalCancelBtn.removeEventListener('click', cancelHandler);
+                    resolve(false);
+                };
+
+                elements.modalConfirmBtn.addEventListener('click', confirmHandler);
+                if (isConfirm) {
+                    elements.modalCancelBtn.addEventListener('click', cancelHandler);
+                } else {
+                    elements.modalConfirmBtn.addEventListener('click', confirmHandler);
+                }
+            });
+        };
+        
+        // --- DATA PERSISTENCE LAYER ---
+
+        function saveDataLocally(data) {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+                console.log("Data successfully saved to localStorage (Local Mode).");
+                return true;
+            } catch (error) {
+                console.error("Error saving data to localStorage:", error);
+                showModal("Local Save Error", "Failed to save data locally. Your browser might be in private mode.", false);
+                return false;
+            }
+        }
+
+        async function saveData(dataToSave) {
+            if (isCanvasEnvironment) {
+                if (!db || !userId) return showModal("Error", "Database not initialized. Cannot save data to cloud.");
+                try {
+                    const docRef = doc(db, DATA_DOC_PATH);
+                    await setDoc(docRef, dataToSave, { merge: true }); // Use merge to only update the fields provided
+                    console.log("Data successfully saved to Firestore (Cloud).");
+                } catch (error) {
+                    console.error("Error saving data:", error);
+                    showModal("Save Error", `Failed to save data to cloud. Check console for details.`, false);
+                }
+            } else {
+                saveDataLocally(dataToSave);
+            }
+        }
+
+        // --- INITIAL DATA & FIREBASE SETUP ---
+
+        function getInitialData() {
+            return {
+                acts: [
+                    { id: 'ipc', name: 'Indian Penal Code (IPC)', questions: [{ id: 1, text: 'The maxim "Actus non facit reum nisi mens sit rea" relates to:', options: ['Strict Liability', 'Vicarious Liability', 'Criminal Intention', 'General Defenses'], answerIndex: 2 }, { id: 2, text: 'What section defines "murder"?', options: ['Sec 299', 'Sec 300', 'Sec 302', 'Sec 304'], answerIndex: 1 }, { id: 3, text: 'Culpable Homicide not amounting to murder is covered under:', options: ['Sec 299', 'Sec 304', 'Sec 307', 'Sec 309'], answerIndex: 1 }, { id: 4, text: 'A child under the age of 7 years commits no offence under:', options: ['Sec 80 (Accident)', 'Sec 82 (Doli Incapax)', 'Sec 84 (Insanity)', 'Sec 76 (Mistake of Fact)'], answerIndex: 1 }, { id: 5, text: 'The right to Private Defence is available against:', options: ['An Act of State', 'A Criminal Trespass', 'A Wrongful Restraint', 'None of the above'], answerIndex: 1 }] },
+                    { id: 'cla', name: 'Contract Law (Indian)', questions: [{ id: 6, text: 'An agreement enforceable by law is a:', options: ['Proposal', 'Promise', 'Contract', 'Obligation'], answerIndex: 2 }, { id: 7, text: 'A "proposal" when accepted becomes a:', options: ['Agreement', 'Consideration', 'Contract', 'Promise'], answerIndex: 3 }, { id: 8, text: 'Which of the following is NOT valid "consideration"?', options: ['Past consideration', 'Illegal consideration', 'Adequate consideration', 'Future consideration'], answerIndex: 1 }, { id: 9, text: 'Who is competent to contract?', options: ['Minor', 'Person of unsound mind', 'A major of sound mind', 'Alien enemy'], answerIndex: 2 }, { id: 10, text: 'A contract caused by coercion is:', options: ['Void', 'Voidable', 'Illegal', 'Valid'], answerIndex: 1 }] },
+                ],
+                aibeYears: [
+                    { id: 'AIBE_2023', name: 'AIBE 2023 Solved Paper', year: 2023, questions: [{ id: 101, text: 'AIBE Q1: Section 12 of CPC deals with?', options: ['Stay of suit', 'Res sub-judice', 'Res judicata', 'Bar to further suit'], answerIndex: 3 }] },
+                    { id: 'AIBE_2022', name: 'AIBE 2022 Solved Paper', year: 2022, questions: [{ id: 102, text: 'AIBE Q2: Maximum penalty under IT Act is?', options: ['5 years', '7 years', '3 years', '10 years'], answerIndex: 1 }] },
+                ]
+            };
+        }
+
+        /** Renders the UI instantly using current or fallback data. */
+        function quickRenderInitialUI() {
+            const initialData = getInitialData();
+            
+            // Populate state if empty
+            if (acts.length === 0) acts = initialData.acts;
+            if (aibeYears.length === 0) aibeYears = initialData.aibeYears;
+
+            // Set initial currentQuizData if none is set
+            if (!currentQuizData && acts.length > 0) {
+                currentQuizData = acts[0];
+                currentActId = acts[0].id;
+                currentItemIndex = 0;
+                currentItemType = 'acts';
+            }
+            
+            renderHomePage();
+            renderBareActsPage();
+            renderAIBEPage();
+            populateAdminSelectors();
+            setAdminMode(adminMode); // Initialize admin view
+
+            // Show the home page immediately
+            showPage('home'); 
+        }
+
+
+        async function initializeFirebase() {
+            app = initializeApp(firebaseConfig);
+
+            // --- LOCAL FALLBACK MODE CHECK ---
+            if (!isCanvasEnvironment) {
+                const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+                const initialData = getInitialData();
+                try {
+                    const parsedData = localData ? JSON.parse(localData) : initialData;
+                    acts = parsedData.acts || initialData.acts;
+                    aibeYears = parsedData.aibeYears || initialData.aibeYears;
+                } catch (e) {
+                    console.error("Error parsing local data, falling back to initial acts.", e);
+                    acts = initialData.acts;
+                    aibeYears = initialData.aibeYears;
+                }
+                
+                elements.loadingState.classList.remove('hidden');
+                elements.loadingState.innerHTML = `<p class="font-bold text-amber-800">⚠️ Local Mode: Changes are saved only in this browser via localStorage.</p>`;
+                quickRenderInitialUI();
+                return;
+            }
+            
+            // --- CLOUD MODE (Canvas) ---
+            quickRenderInitialUI(); 
+            elements.loadingState.classList.remove('hidden');
+            
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            if (initialAuthToken) {
+                await signInWithCustomToken(auth, initialAuthToken);
+            } else {
+                await signInAnonymously(auth);
+            }
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                    elements.userDisplay.textContent = `User ID: ${userId}`;
+                    isAuthReady = true;
+                    startListeningForData(); 
+                } else {
+                    console.error("Authentication failed or user logged out.");
+                    elements.loadingState.innerHTML = `<p class="text-red-600">Authentication failed. Displaying fallback data.</p>`;
+                }
+            });
+        }
+
+        function startListeningForData() {
+            if (!db) return;
+
+            const docRef = doc(db, DATA_DOC_PATH);
+            const initialData = getInitialData();
+
+            onSnapshot(docRef, (docSnap) => {
+                let dataChanged = false;
+
+                if (docSnap.exists()) {
+                    const cloudData = docSnap.data();
+                    
+                    const newActs = cloudData.acts || initialData.acts;
+                    const newAibe = cloudData.aibeYears || initialData.aibeYears;
+                    
+                    if (JSON.stringify(acts) !== JSON.stringify(newActs) || JSON.stringify(aibeYears) !== JSON.stringify(newAibe)) {
+                         acts = newActs;
+                         aibeYears = newAibe;
+                         dataChanged = true;
+                    }
+                } else {
+                    // Document is empty, set initial data if state is different
+                    if (JSON.stringify(acts) !== JSON.stringify(initialData.acts) || JSON.stringify(aibeYears) !== JSON.stringify(initialData.aibeYears)) {
+                        acts = initialData.acts;
+                        aibeYears = initialData.aibeYears;
+                        saveData(initialData); 
+                        dataChanged = true;
+                    }
+                }
+
+                if (dataChanged) {
+                    // Re-calculate current item after update
+                    const targetArray = currentItemType === 'acts' ? acts : aibeYears;
+                    const index = targetArray.findIndex(item => item.id === currentActId);
+
+                    if (index !== -1) {
+                        currentItemIndex = index;
+                        currentQuizData = targetArray[index];
+                    } else if (targetArray.length > 0) {
+                        // If selected item was deleted, default to the first one in the acts
+                        currentQuizData = acts[0];
+                        currentActId = acts[0].id;
+                        currentItemIndex = 0;
+                        currentItemType = 'acts';
+                    } else {
+                        currentQuizData = null;
+                        currentActId = null;
+                    }
+
+                    // Re-render UI
+                    renderHomePage();
+                    renderBareActsPage();
+                    renderAIBEPage();
+                    populateAdminSelectors();
+                }
+                
+                elements.loadingState.classList.add('hidden');
+            }, (error) => {
+                console.error("Firestore error:", error);
+                elements.loadingState.innerHTML = `<p class="text-red-600">Failed to load cloud data: ${error.message}. Displaying fallback data.</p>`;
+            });
+        }
+        
+        // --- PAGE NAVIGATION AND RENDERING ---
+        
+        /** Safely navigates to a new page, checking for mid-quiz exit confirmation. */
+        window.safeNavigate = async function(targetPage) {
+            // Check if user is currently in the middle of a quiz (question or feedback state)
+            const isMidQuiz = currentPage === 'quiz' && quizState !== 'results';
+
+            if (isMidQuiz && targetPage !== 'quiz') {
+                const confirmed = await showModal(
+                    "Leave Quiz?",
+                    "Are you sure you want to leave the current quiz? Your score for this set will be lost.",
+                    true
+                );
+
+                if (confirmed) {
+                    showPage(targetPage);
+                }
+            } else {
+                showPage(targetPage);
+            }
+        }
+
+        /** Updates UI to show the requested page and hides others. */
+        window.showPage = function(pageName) {
+            currentPage = pageName;
+            const isViewingAdmin = (pageName === 'admin');
+            
+            // Reset keyboard focus when leaving quiz
+            if (pageName !== 'quiz') {
+                 keyboardSelectedIndex = -1;
+            }
+
+            // Hide all primary content sections
+            [elements.homePageSection, elements.bareActsSection, elements.aibeSection, elements.quizSection, elements.adminSection].forEach(el => {
+                el.classList.add('hidden');
+            });
+
+            // Update main navigation tabs style
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('text-white', 'bg-indigo-800', 'border-amber-400');
+                tab.classList.add('text-indigo-300', 'hover:text-white', 'hover:bg-indigo-800', 'border-transparent');
+            });
+
+            // Show the requested section and style the navigation
+            const navElement = document.getElementById(`nav-${pageName}`);
+            if (navElement) {
+                navElement.classList.add('text-white', 'bg-indigo-800', 'border-amber-400');
+                navElement.classList.remove('text-indigo-300', 'hover:text-white', 'hover:bg-indigo-800', 'border-transparent');
+            }
+
+            if (pageName === 'home') elements.homePageSection.classList.remove('hidden');
+            else if (pageName === 'bareActs') elements.bareActsSection.classList.remove('hidden');
+            else if (pageName === 'aibe') elements.aibeSection.classList.remove('hidden');
+            else if (pageName === 'quiz') elements.quizSection.classList.remove('hidden');
+            else if (isViewingAdmin) elements.adminSection.classList.remove('hidden');
+            
+            // Adjust Admin Mode Button Text
+            document.getElementById('admin-mode-btn').textContent = isViewingAdmin ? "Back to Home" : "Admin Mode";
+            document.getElementById('main-nav').classList.toggle('hidden', isViewingAdmin);
+        }
+
+        /** Renders a subset of acts and aibe papers for the Home Page. */
+        function renderHomePage() {
+            // 1. Get featured items
+            const featuredActs = acts.slice(0, FEATURED_ACT_COUNT);
+            // Sort AIBE by year descending (already done in renderAIBEPage, but good to ensure here)
+            aibeYears.sort((a, b) => b.year - a.year);
+            const featuredAibe = aibeYears.slice(0, FEATURED_AIBE_COUNT);
+
+            // 2. Combine and map items with their type
+            const featuredItems = [
+                ...featuredActs.map(item => ({...item, type: 'acts'})), 
+                ...featuredAibe.map(item => ({...item, type: 'aibe'}))
+            ];
+            
+            // 3. Render the combined list
+            elements.featuredActsContainer.innerHTML = featuredItems.map(item => `
+                <div class="act-card bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-xl font-bold primary-text mb-2">${item.name}</h4>
+                        <p class="text-sm text-gray-500 mb-4">${item.questions.length} Questions</p>
+                        <span class="text-xs font-medium px-3 py-1 rounded-full ${item.type === 'acts' ? 'text-indigo-700 bg-indigo-100' : 'text-amber-700 bg-amber-100'}">
+                            ${item.type === 'acts' ? 'Bare Act' : 'AIBE Paper'}
+                        </span>
+                    </div>
+                    <button onclick="startQuiz('${item.id}', '${item.type}')" class="w-full mt-4 py-3 accent-bg text-gray-900 rounded-xl font-semibold hover:accent-hover-bg transition duration-150 shadow-md">
+                        Start Quiz
+                    </button>
+                </div>
+            `).join('');
+
+            // 4. Render action buttons (Updated to include AIBE link)
+            if (elements.homeActionButtons) {
+                elements.homeActionButtons.innerHTML = `
+                    <div class="flex flex-col md:flex-row gap-6 justify-center">
+                        <button onclick="safeNavigate('bareActs')" class="px-8 py-4 bg-gray-200 primary-text font-semibold rounded-xl hover:bg-gray-300 transition duration-150 shadow-md">
+                            Explore All Bare Acts
+                        </button>
+                        <button onclick="safeNavigate('aibe')" class="px-8 py-4 bg-gray-200 primary-text font-semibold rounded-xl hover:bg-gray-300 transition duration-150 shadow-md">
+                            Show More AIBE Papers
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        /** Renders all acts for the Bare Acts Page. */
+        function renderBareActsPage() {
+            if (acts.length === 0) {
+                elements.allActsContainer.innerHTML = '';
+                document.getElementById('no-acts-message').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('no-acts-message').classList.add('hidden');
+            
+            elements.allActsContainer.innerHTML = acts.map(act => `
+                <div class="act-card bg-white p-5 rounded-xl border border-gray-200 shadow-md flex flex-col justify-between cursor-pointer" onclick="startQuiz('${act.id}', 'acts')">
+                    <h4 class="text-lg font-semibold primary-text">${act.name}</h4>
+                    <p class="text-sm text-amber-600 mt-2">${act.questions.length} MCQs available</p>
+                </div>
+            `).join('');
+        }
+        
+        /** Renders all AIBE year papers for the AIBE Page. */
+        function renderAIBEPage() {
+            aibeYears.sort((a, b) => b.year - a.year); // Sort by year descending
+            
+            if (aibeYears.length === 0) {
+                elements.allAibeContainer.innerHTML = '';
+                document.getElementById('no-aibe-message').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('no-aibe-message').classList.add('hidden');
+            
+            elements.allAibeContainer.innerHTML = aibeYears.map(aibe => `
+                <div class="act-card bg-white p-5 rounded-xl border border-gray-200 shadow-md flex flex-col justify-between cursor-pointer" onclick="startQuiz('${aibe.id}', 'aibe')">
+                    <h4 class="text-lg font-semibold primary-text">${aibe.name}</h4>
+                    <p class="text-sm text-amber-600 mt-2">${aibe.questions.length} MCQs available</p>
+                </div>
+            `).join('');
+        }
+
+
+        // --- QUIZ FLOW LOGIC ---
+
+        /** Starts the quiz for the selected Act or AIBE year. */
+        window.startQuiz = function(itemId, type) {
+            currentItemType = type;
+            currentActId = itemId;
+
+            const dataArray = type === 'acts' ? acts : aibeYears;
+            currentItemIndex = dataArray.findIndex(item => item.id === itemId);
+            currentQuizData = dataArray[currentItemIndex];
+
+            if (!currentQuizData || currentQuizData.questions.length === 0) {
+                return showModal("No Questions", `This ${type === 'acts' ? 'Act' : 'AIBE Year'} has no questions yet. Please try another one or check back later.`);
+            }
+
+            // Reset state
+            currentQuestionIndex = 0;
+            userAnswers = {};
+            quizState = 'question'; // Start in 'question' state
+            keyboardSelectedIndex = -1; // Reset keyboard focus
+            
+            elements.quizResults.classList.add('hidden'); // Ensure results are hidden
+            elements.mcqContainer.classList.remove('hidden'); // Ensure mcq flow is visible
+
+            // Switch to the quiz page view
+            showPage('quiz'); 
+            
+            renderQuestion();
+        }
+
+        /** Renders the current question and its options. */
+        function renderQuestion() {
+            if (!currentQuizData || currentQuestionIndex >= currentQuizData.questions.length) {
+                return renderResults();
+            }
+
+            quizState = 'question'; // Ready for selection
+            keyboardSelectedIndex = -1; // Reset keyboard focus
+            elements.actionButton.disabled = true;
+            elements.actionButton.textContent = 'Next Question'; // Reset text
+            elements.feedbackMessage.classList.add('hidden');
+            elements.feedbackMessage.textContent = '';
+            elements.feedbackMessage.className = 'mt-4 p-3 rounded-xl font-bold hidden border';
+            
+            const q = currentQuizData.questions[currentQuestionIndex];
+            const qIdStr = String(q.id);
+            const questionNumber = currentQuestionIndex + 1;
+            const totalQuestions = currentQuizData.questions.length;
+
+            elements.questionProgress.textContent = `Question ${questionNumber} of ${totalQuestions} - ${currentQuizData.name}`;
+
+            // *** VERTICAL COMPACTNESS ADJUSTMENTS APPLIED HERE ***
+            let html = `
+                <!-- Reduced vertical padding/margin: p-4 and my-3 (was p-5 and my-4) -->
+                <div class="p-4 my-3 bg-gray-50 rounded-xl transition-all duration-300">
+                    <p class="text-xl font-semibold mb-4 text-gray-800">${q.text}</p>
+                    <!-- Reduced space-y-3 (was space-y-4) -->
+                    <div id="q-${q.id}-options" class="space-y-3"> 
+            `;
+
+            q.options.forEach((optionText, oIndex) => {
+                const clickAction = `onclick="selectOption(${q.id}, ${oIndex})"`;
+                html += `
+                    <div id="option-${oIndex}" class="mcq-option p-4 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-100" data-index="${oIndex}" ${clickAction}>
+                        <div class="custom-radio">
+                            <div class="custom-radio-dot"></div>
+                        </div>
+                        <div class="flex-grow">
+                            <span class="font-bold text-gray-700">${String.fromCharCode(65 + oIndex)}.</span> ${optionText}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div></div>`;
+            elements.questionArea.innerHTML = html;
+        }
+
+        /** Handles the selection of an answer option, providing INSTANT feedback. */
+        window.selectOption = function(questionId, selectedIndex) {
+            if (quizState === 'feedback') return; // Do nothing if answer is already checked
+
+            const qIdStr = String(questionId); 
+            const index = Number(selectedIndex);
+            keyboardSelectedIndex = index; // Keep keyboard index in sync
+
+            // 1. Mark as selected (visually)
+            const questionContainer = document.getElementById(`q-${qIdStr}-options`);
+            if (!questionContainer) return;
+            Array.from(questionContainer.children).forEach(option => {
+                option.classList.remove('selected');
+            });
+            const selectedOption = document.getElementById(`option-${index}`);
+            if (selectedOption) {
+                selectedOption.classList.add('selected');
+            }
+
+            // 2. Record answer
+            userAnswers[qIdStr] = index;
+
+            // 3. INSTANT FEEDBACK: Reveal the correct answer and feedback immediately
+            revealFeedback(); 
+            
+            // 4. Set state to feedback, waiting for user to advance
+            quizState = 'feedback'; 
+            
+            // 5. Update button text and enable instantly
+            elements.actionButton.textContent = (currentQuestionIndex === currentQuizData.questions.length - 1) ? 'View Results' : 'Next Question';
+            elements.actionButton.disabled = false;
+        }
+        
+        /** Handles advancing to the next question or the results screen. */
+        window.handleAction = function() {
+            // This is called AFTER feedback is revealed (i.e., quizState is 'feedback').
+            if (quizState === 'feedback') {
+                currentQuestionIndex++;
+                renderQuestion(); 
+            } else if (quizState === 'results') {
+                // Return to appropriate selection page after viewing results
+                safeNavigate(currentItemType === 'acts' ? 'bareActs' : 'aibe');
+            }
+        }
+        
+        /** Applies CSS classes to show correct/incorrect answers. */
+        function revealFeedback() {
+            const q = currentQuizData.questions[currentQuestionIndex];
+            const qIdStr = String(q.id);
+            const selectedIndex = userAnswers[qIdStr];
+            const correctIndex = q.answerIndex;
+            const isCorrect = selectedIndex === correctIndex;
+
+            elements.feedbackMessage.classList.remove('hidden', 'bg-red-100', 'bg-green-100', 'text-red-700', 'text-green-700');
+
+            if (isCorrect) {
+                elements.feedbackMessage.classList.add('bg-green-100', 'text-green-700', 'border-green-500');
+                elements.feedbackMessage.textContent = "✅ Correct! Great job.";
+            } else {
+                elements.feedbackMessage.classList.add('bg-red-100', 'text-red-700', 'border-red-500');
+                elements.feedbackMessage.textContent = `❌ Incorrect. The correct answer was ${String.fromCharCode(65 + correctIndex)}: ${q.options[correctIndex]}.`;
+            }
+
+            const questionContainer = document.getElementById(`q-${qIdStr}-options`);
+            Array.from(questionContainer.children).forEach((option, index) => {
+                option.classList.add('disabled'); 
+                option.onclick = null; // Disable further clicks
+
+                if (index === correctIndex) {
+                    option.classList.remove('selected');
+                    option.classList.add('correct', 'border-green-500');
+                } else if (index === selectedIndex) {
+                    option.classList.add('incorrect', 'border-red-500');
+                } else {
+                    // Visually deemphasize unselected wrong answers
+                    option.classList.add('opacity-70');
+                }
+            });
+            // elements.actionButton.disabled is handled by selectOption now
+        }
+
+        /** Renders the final quiz results screen. */
+        function renderResults() {
+            quizState = 'results';
+            elements.mcqContainer.classList.add('hidden');
+            elements.quizResults.classList.remove('hidden');
+            
+            const totalQuestions = currentQuizData.questions.length;
+            const correctCount = currentQuizData.questions.filter(q => userAnswers[String(q.id)] === q.answerIndex).length;
+            const scorePercentage = (correctCount / totalQuestions) * 100;
+            const scoreColor = scorePercentage >= 80 ? 'text-green-600' : scorePercentage >= 50 ? 'text-amber-600' : 'text-red-600';
+            const feedbackText = scorePercentage >= 80 ? 'Outstanding! You have a strong grasp of the subject.' : scorePercentage >= 50 ? 'Solid performance. Keep studying the difficult concepts.' : 'Time to review the basics. Consistent practice is key.';
+
+            elements.quizResults.innerHTML = `
+                <h2 class="text-4xl font-extrabold primary-text mb-8">Quiz Results: ${currentQuizData.name}</h2>
+                <div class="p-8 bg-gray-50 rounded-xl shadow-xl border-t-8 primary-border">
+                    <p class="text-2xl text-gray-700 mb-4 font-medium">Your Final Score:</p>
+                    <p class="text-7xl font-black ${scoreColor} mb-6">${correctCount}/${totalQuestions}</p>
+                    <p class="text-3xl font-bold mb-8 ${scoreColor}">${scorePercentage.toFixed(0)}% Accuracy</p>
+                    <p class="text-lg text-gray-600 mb-10 italic">${feedbackText}</p>
+                    
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <button onclick="startQuiz('${currentActId}', '${currentItemType}')" class="px-8 py-4 bg-green-600 text-white text-xl rounded-xl font-semibold hover:bg-green-700 transition duration-150 shadow-lg">
+                            Practice Again
+                        </button>
+                        <button onclick="safeNavigate('${currentItemType === 'acts' ? 'bareActs' : 'aibe'}')" class="px-8 py-4 primary-bg text-white text-xl rounded-xl font-semibold hover:bg-indigo-700 transition duration-150 shadow-lg">
+                            Change Practice Set
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        // --- ADMIN LOGIC ---
+
+        /** Toggles Admin Mode and handles password protection. */
+        window.authenticateAdmin = function() {
+            const password = document.getElementById('admin-password').value;
+            if (password === ADMIN_PASSWORD) {
+                elements.adminAuth.classList.add('hidden');
+                elements.adminControls.classList.remove('hidden');
+                elements.adminAuthMessage.textContent = '';
+                showModal("Success", `Admin controls unlocked! You can now add/edit/delete content. Changes are saved ${isCanvasEnvironment ? 'to the Cloud' : 'locally in your browser'}.`);
+                populateAdminSelectors();
+                setAdminMode(adminMode);
+            } else {
+                elements.adminAuthMessage.textContent = 'Invalid password.';
+            }
+        }
+        
+        /** Switches the current view in the Admin dashboard. */
+        window.setAdminMode = function(mode) {
+            adminMode = mode;
+            document.querySelectorAll('.admin-tab').forEach(tab => {
+                tab.classList.remove('primary-border', 'primary-text');
+                tab.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700');
+            });
+            
+            document.getElementById(`admin-tab-${mode}`).classList.add('primary-border', 'primary-text');
+            document.getElementById(`admin-tab-${mode}`).classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700');
+
+            elements.adminActsManagement.classList.toggle('hidden', mode !== 'acts');
+            elements.adminAibeManagement.classList.toggle('hidden', mode !== 'aibe');
+            
+            // Ensure selectors and lists are updated when switching tabs
+            populateAdminSelectors();
+            if (mode === 'acts') updateAdminActName(); else updateAdminAIBEName();
+        }
+
+        /** Populates both Act and AIBE selectors in Admin mode. */
+        function populateAdminSelectors() {
+            // --- ACTS SELECTOR ---
+            elements.actSelector.innerHTML = '';
+            elements.deleteActBtn.disabled = true;
+
+            if (acts.length === 0) {
+                 elements.actSelector.innerHTML = '<option value="-1" disabled selected>No Acts available. Add a new one first.</option>';
+            } else {
+                 elements.deleteActBtn.disabled = false;
+                 acts.forEach((act, index) => {
+                    const option = document.createElement('option');
+                    option.value = index; 
+                    option.textContent = act.name;
+                    elements.actSelector.appendChild(option);
+                });
+                // Ensure a value is selected if items exist
+                if (elements.actSelector.children.length > 0) {
+                    elements.actSelector.value = '0';
+                }
+            }
+
+            // --- AIBE SELECTOR ---
+            elements.aibeSelector.innerHTML = '';
+            elements.deleteAibeBtn.disabled = true;
+
+            if (aibeYears.length === 0) {
+                 elements.aibeSelector.innerHTML = '<option value="-1" disabled selected>No AIBE Sets available. Add a new one first.</option>';
+            } else {
+                 elements.deleteAibeBtn.disabled = false;
+                 aibeYears.forEach((aibe, index) => {
+                    const option = document.createElement('option');
+                    option.value = index; 
+                    option.textContent = aibe.name;
+                    elements.aibeSelector.appendChild(option);
+                });
+                // Ensure a value is selected if items exist
+                if (elements.aibeSelector.children.length > 0) {
+                    elements.aibeSelector.value = '0';
+                }
+            }
+            
+            // Initial/default selection update (This relies on the selectors having a default value set above)
+            updateAdminActName();
+            updateAdminAIBEName();
+        }
+
+        // --- BARE ACTS MANAGEMENT FUNCTIONS ---
+
+        /** Updates the display name and question list for the selected Act in the admin form. */
+        window.updateAdminActName = function() {
+            const index = parseInt(elements.actSelector.value);
+            const act = acts[index];
+
+            if (act) {
+                elements.currentAdminActName.textContent = act.name;
+                elements.listActName.textContent = act.name;
+                renderAdminQuestionList(act, index, 'acts');
+            } else {
+                elements.currentAdminActName.textContent = 'N/A';
+                elements.listActName.textContent = 'N/A';
+                elements.existingQuestionsList.innerHTML = `<p class="text-gray-500">Select an Act to manage questions.</p>`;
+            }
+        }
+
+        /** Adds a new Act (Tab) to the data and saves. */
+        window.addNewAct = async function() {
+            const newActName = document.getElementById('new-act-name').value.trim();
+
+            if (!newActName) {
+                return showModal("Input Required", "Please enter a name for the new Act.");
+            }
+
+            const newActId = newActName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            if (acts.some(act => act.id === newActId)) {
+                return showModal("Error", "An Act with a similar name already exists. Please choose a unique name.");
+            }
+
+            const newAct = {
+                id: newActId,
+                name: newActName,
+                questions: []
+            };
+
+            acts.push(newAct);
+            await saveData({ acts: acts }); 
+            
+            document.getElementById('new-act-name').value = '';
+            showModal("Success", `Act "${newActName}" has been added and saved!`);
+            populateAdminSelectors();
+            renderHomePage(); 
+            renderBareActsPage();
+        }
+
+        window.confirmDeleteAct = async function() {
+            const actIndex = parseInt(elements.actSelector.value);
+            const actName = acts[actIndex]?.name;
+
+            if (!actName) return showModal("Error", "No Act is currently selected or available to delete.");
+
+            const confirmed = await showModal(
+                "Confirm Deletion",
+                `Are you sure you want to permanently delete the entire Act: "${actName}"? This action cannot be undone.`, 
+                true
+            );
+
+            if (confirmed) {
+                 acts.splice(actIndex, 1);
+                 await saveData({ acts: acts });
+                 showModal("Deleted!", `The Act "${actName}" has been successfully deleted.`);
+            }
+        }
+
+        // --- AIBE MANAGEMENT FUNCTIONS ---
+
+        /** Updates the display name and question list for the selected AIBE set in the admin form. */
+        window.updateAdminAIBEName = function() {
+            const index = parseInt(elements.aibeSelector.value);
+            const aibe = aibeYears[index];
+
+            if (aibe) {
+                elements.currentAdminAibeName.textContent = aibe.name;
+                elements.listAibeName.textContent = aibe.name;
+                renderAdminQuestionList(aibe, index, 'aibe');
+            } else {
+                elements.currentAdminAibeName.textContent = 'N/A';
+                elements.listAibeName.textContent = 'N/A';
+                elements.existingAibeQuestionsList.innerHTML = `<p class="text-gray-500">Select an AIBE Set to manage questions.</p>`;
+            }
+        }
+
+        /** Adds a new AIBE Year Set to the data and saves. */
+        window.addNewAIBEYear = async function() {
+            const newYearStr = document.getElementById('new-aibe-year').value.trim();
+            const newTitle = document.getElementById('new-aibe-title').value.trim();
+
+            if (!newYearStr || !newTitle) {
+                return showModal("Input Required", "Please enter both the Year and the Display Title.");
+            }
+            const newYear = parseInt(newYearStr);
+            if (isNaN(newYear) || newYearStr.length !== 4) {
+                 return showModal("Input Error", "Please enter a valid 4-digit year.");
+            }
+
+            const newId = `AIBE_${newYearStr}`;
+            if (aibeYears.some(aibe => aibe.id === newId)) {
+                return showModal("Error", `An AIBE set for the year ${newYearStr} already exists.`);
+            }
+
+            const newAIBE = {
+                id: newId,
+                name: newTitle,
+                year: newYear,
+                questions: []
+            };
+
+            aibeYears.push(newAIBE);
+            aibeYears.sort((a, b) => b.year - a.year); // Keep sorted by year
+            await saveData({ aibeYears: aibeYears }); 
+            
+            document.getElementById('new-aibe-year').value = '';
+            document.getElementById('new-aibe-title').value = '';
+            showModal("Success", `AIBE Set "${newTitle}" (${newYearStr}) has been added and saved!`);
+            populateAdminSelectors();
+            renderAIBEPage();
+        }
+
+        window.confirmDeleteAIBEYear = async function() {
+            const aibeIndex = parseInt(elements.aibeSelector.value);
+            const aibeName = aibeYears[aibeIndex]?.name;
+
+            if (!aibeName) return showModal("Error", "No AIBE set is currently selected or available to delete.");
+
+            const confirmed = await showModal(
+                "Confirm Deletion", 
+                `Are you sure you want to permanently delete the AIBE Set: "${aibeName}"? This action cannot be undone.`, 
+                true
+            );
+
+            if (confirmed) {
+                 aibeYears.splice(aibeIndex, 1);
+                 await saveData({ aibeYears: aibeYears });
+                 showModal("Deleted!", `The AIBE Set "${aibeName}" has been successfully deleted.`);
+            }
+        }
+
+        // --- SHARED QUESTION MANAGEMENT FUNCTIONS ---
+
+        /** Renders the list of existing questions for the current Act/AIBE in the Admin view. */
+        function renderAdminQuestionList(item, itemIndex, type) {
+            const listContainer = type === 'acts' ? elements.existingQuestionsList : elements.existingAibeQuestionsList;
+            listContainer.innerHTML = '';
+            
+            if (item.questions.length === 0) {
+                listContainer.innerHTML = `<p class="text-gray-500 italic">No questions have been added to this ${type === 'acts' ? 'Act' : 'AIBE Set'} yet.</p>`;
+                return;
+            }
+
+            item.questions.forEach((q, qIndex) => {
+                const correctOption = q.options[q.answerIndex];
+                const qItem = document.createElement('div');
+                qItem.className = 'p-4 border rounded-xl bg-gray-50 flex justify-between items-start hover:shadow-md transition duration-150';
+                
+                qItem.innerHTML = `
+                    <div class="flex-grow pr-4">
+                        <p class="font-semibold text-gray-700">Q${qIndex + 1}: ${q.text.substring(0, 100)}${q.text.length > 100 ? '...' : ''}</p>
+                        <p class="text-xs text-green-700 font-medium mt-1">Correct: ${correctOption}</p>
+                    </div>
+                    <div class="flex space-x-2 flex-shrink-0">
+                        <button onclick="openEditQuestionForm('${type}', ${itemIndex}, ${qIndex})" class="px-3 py-1 text-sm bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition duration-150 font-medium">
+                            Edit
+                        </button>
+                        <button onclick="confirmDeleteQuestion('${type}', ${itemIndex}, ${qIndex}, '${q.text.substring(0, 30)}...')" class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition duration-150 font-medium">
+                            Delete
+                        </button>
+                    </div>
+                `;
+                listContainer.appendChild(qItem);
+            });
+        }
+
+        /** Opens the modal form for editing an existing question. */
+        window.openEditQuestionForm = function(type, itemIndex, qIndex) {
+            const dataArray = type === 'acts' ? acts : aibeYears;
+            const item = dataArray[itemIndex];
+            const q = item.questions[qIndex];
+
+            // Set hidden fields for saving
+            elements.editModeType.value = type;
+            elements.editItemIndex.value = itemIndex;
+            document.getElementById('edit-q-index').value = qIndex;
+            
+            // Populate form fields
+            document.getElementById('edit-question-text').value = q.text;
+            for (let i = 0; i < 4; i++) {
+                document.getElementById(`edit-option-${i}`).value = q.options[i];
+            }
+            document.getElementById('edit-correct-answer-index').value = q.answerIndex;
+
+            // Show modal
+            elements.editModalOverlay.classList.remove('hidden');
+        }
+
+        /** Closes the editing modal. */
+        window.closeEditModal = function() {
+            elements.editModalOverlay.classList.add('hidden');
+        }
+
+        /** Saves the changes from the edit modal. */
+        window.saveEditedQuestion = async function() {
+            const type = elements.editModeType.value;
+            const itemIndex = parseInt(elements.editItemIndex.value);
+            const qIndex = parseInt(document.getElementById('edit-q-index').value);
+
+            const dataArray = type === 'acts' ? acts : aibeYears;
+            const currentItem = dataArray[itemIndex];
+
+            const updatedQText = document.getElementById('edit-question-text').value.trim();
+            const updatedOptions = [
+                document.getElementById('edit-option-0').value.trim(),
+                document.getElementById('edit-option-1').value.trim(),
+                document.getElementById('edit-option-2').value.trim(),
+                document.getElementById('edit-option-3').value.trim(),
+            ];
+            const updatedAnswerIndex = parseInt(document.getElementById('edit-correct-answer-index').value);
+
+            if (!updatedQText || updatedOptions.some(opt => !opt) || isNaN(updatedAnswerIndex)) {
+                return showModal("Input Error", "Please ensure all fields are filled correctly before saving.");
+            }
+
+            currentItem.questions[qIndex].text = updatedQText;
+            currentItem.questions[qIndex].options = updatedOptions;
+            currentItem.questions[qIndex].answerIndex = updatedAnswerIndex;
+            
+            await saveData(type === 'acts' ? { acts: acts } : { aibeYears: aibeYears });
+            
+            closeEditModal();
+            showModal("Success", "Question updated and saved successfully!");
+            renderAdminQuestionList(currentItem, itemIndex, type);
+        }
+
+        /** Confirms question deletion before calling the delete function. */
+        window.confirmDeleteQuestion = async function(type, itemIndex, qIndex, questionPreview) {
+             const confirmed = await showModal(
+                "Confirm Question Deletion", 
+                `Are you sure you want to delete question Q${qIndex + 1} ("${questionPreview}") from the list?`, 
+                true
+            );
+
+            if (confirmed) {
+                deleteQuestion(type, itemIndex, qIndex);
+            }
+        }
+
+        /** Deletes a specific question from an Act/AIBE set. */
+        async function deleteQuestion(type, itemIndex, qIndex) {
+            const dataArray = type === 'acts' ? acts : aibeYears;
+            const item = dataArray[itemIndex];
+            
+            item.questions.splice(qIndex, 1);
+            
+            await saveData(type === 'acts' ? { acts: acts } : { aibeYears: aibeYears });
+            
+            showModal("Deleted!", `Question Q${qIndex + 1} has been successfully deleted from ${item.name}.`);
+            renderAdminQuestionList(item, itemIndex, type);
+        }
+        
+        /** * Parses the "Superpowers" input string into an array of structured question objects. */
+        function parseSuperpowerMultiInput(input) {
+            const rawQuestions = [];
+            let currentQuestion = {};
+            
+            // NEW keyRegex: Matches '1:', 'Q)', 'A:', 'as)', etc.
+            // (\d+|Q|A|B|C|D|as): Capture group 1: digits, or Q, A, B, C, D, or as (case insensitive)
+            // \s*[:)]\s*: Matches the delimiter (: or ))
+            const keyRegex = /^\s*(\d+|Q|A|B|C|D|as)\s*[:)]\s*(.*)$/i; 
+            const lines = input.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+
+            for (const line of lines) {
+                const match = line.match(keyRegex);
+                if (match) {
+                    const rawKey = match[1].toUpperCase();
+                    const value = match[2].trim();
+                    
+                    // Determine the standardized key (Q, A, B, C, D, ANS)
+                    let key;
+                    if (rawKey === 'Q' || /^\d+$/.test(rawKey)) { // Handle 'Q' or any number (1, 2, 3...)
+                        key = 'Q';
+                    } else if (rawKey === 'AS') { // Handle 'as'
+                        key = 'ANS';
+                    } else {
+                        key = rawKey; // A, B, C, D
+                    }
+
+                    if (key === 'Q') {
+                        // Push previous question if non-empty and start a new one
+                        if (Object.keys(currentQuestion).length > 0) rawQuestions.push(currentQuestion);
+                        currentQuestion = { Q: value };
+                    } else {
+                        currentQuestion[key] = value;
+                    }
+                }
+            }
+            if (Object.keys(currentQuestion).length > 0) rawQuestions.push(currentQuestion);
+
+            const validQuestions = [];
+            const invalidMessages = [];
+            let currentMaxId = acts.flatMap(a => a.questions).reduce((max, q) => Math.max(max, q.id || 0), 0) + aibeYears.flatMap(a => a.questions).reduce((max, q) => Math.max(max, q.id || 0), 0);
+
+            rawQuestions.forEach((data, index) => {
+                // Check for standardized keys (Q, A, B, C, D, ANS)
+                if (!data.Q || !data.A || !data.B || !data.C || !data.D || !data.ANS) {
+                    invalidMessages.push(`Question ${index + 1} (starts with: ${data.Q ? data.Q.substring(0, 50) + '...' : 'N/A'}) is missing required fields (Q, A, B, C, D, or as).`);
+                    return;
+                }
+                const options = [data.A, data.B, data.C, data.D];
+                let answerIndex;
+                const ansKey = data.ANS.toUpperCase().trim().charAt(0); 
+                switch (ansKey) {
+                    case 'A': answerIndex = 0; break;
+                    case 'B': answerIndex = 1; break;
+                    case 'C': answerIndex = 2; break;
+                    case 'D': answerIndex = 3; break;
+                    default: 
+                        invalidMessages.push(`Question ${index + 1} has an invalid Answer key: "${data.ANS}". Answer must be A, B, C, or D.`);
+                        return;
+                }
+
+                currentMaxId++;
+                validQuestions.push({
+                    id: currentMaxId,
+                    text: data.Q,
+                    options: options,
+                    answerIndex: answerIndex
+                });
+            });
+
+            return { 
+                valid: validQuestions, 
+                invalid: invalidMessages 
+            };
+        }
+
+        /** Adds new Question(s) using the Superpowers input. */
+        window.addNewQuestion = async function(type) {
+            const selector = type === 'acts' ? elements.actSelector : elements.aibeSelector;
+            const inputField = type === 'acts' ? elements.superpowerInput : elements.aibeSuperpowerInput;
+
+            const rawInput = inputField.value.trim();
+            if (!rawInput) return showModal("Input Required", "Please paste your questions into the input field.");
+            
+            const itemIndex = parseInt(selector.value);
+            const dataArray = type === 'acts' ? acts : aibeYears;
+            const currentItem = dataArray[itemIndex];
+            
+            if (!currentItem) return showModal("Error", `Please select a valid ${type === 'acts' ? 'Act' : 'AIBE Set'} to add the question to.`);
+
+            const parsedResults = parseSuperpowerMultiInput(rawInput);
+            const validQuestions = parsedResults.valid;
+            const invalidMessages = parsedResults.invalid;
+            
+            if (validQuestions.length === 0) {
+                let message = "No valid questions were found. Ensure you are using the required **Q/number, A, B, C, D, and as** format.";
+                if (invalidMessages.length > 0) {
+                     message += "<br><br><span class='font-bold text-red-600'>Detailed Errors:</span><br>" + invalidMessages.join('<br>');
+                }
+                return showModal("Input Error", message);
+            }
+            
+            currentItem.questions.push(...validQuestions);
+            await saveData(type === 'acts' ? { acts: acts } : { aibeYears: aibeYears });
+            
+            inputField.value = '';
+
+            const totalAdded = validQuestions.length;
+            let feedback = `<span class='font-bold'>${totalAdded} new question(s) added</span> to ${currentItem.name} successfully.`;
+            if (invalidMessages.length > 0) {
+                feedback += `<br><span class="text-red-600 font-normal">${invalidMessages.length} question(s) failed to parse.</span>`;
+            }
+
+            elements.adminStatusMessage.className = 'text-green-600 mt-3 font-semibold';
+            elements.adminStatusMessage.innerHTML = feedback;
+
+            renderAdminQuestionList(currentItem, itemIndex, type);
+            setTimeout(() => elements.adminStatusMessage.innerHTML = '', 5000);
+        }
+
+        // --- KEYBOARD LISTENER ---
+
+        document.addEventListener('keydown', (event) => {
+            const totalOptions = 4; // MCQs always have A, B, C, D
+
+            // 1. QUIZ MODE KEYBINDINGS
+            if (currentPage === 'quiz' && currentQuizData) {
+
+                // Arrow Keys for selection/focus only in the question state
+                if (quizState === 'question' && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+                    event.preventDefault(); // Stop page scrolling
+                    
+                    let nextIndex = keyboardSelectedIndex;
+
+                    if (event.key === 'ArrowUp') {
+                        nextIndex = (nextIndex <= 0) ? totalOptions - 1 : nextIndex - 1;
+                    } else if (event.key === 'ArrowDown') {
+                        nextIndex = (nextIndex >= totalOptions - 1) ? 0 : nextIndex + 1;
+                    }
+                    
+                    // Track focus
+                    keyboardSelectedIndex = nextIndex;
+                    
+                    // Visually mark the focused option as 'selected'
+                    const q = currentQuizData.questions[currentQuestionIndex];
+                    const qOptions = document.getElementById(`q-${q.id}-options`);
+                    if (qOptions) {
+                        Array.from(qOptions.children).forEach((option, index) => {
+                            option.classList.remove('selected');
+                            if (index === keyboardSelectedIndex) {
+                                option.classList.add('selected');
+                            }
+                        });
+                    }
+                } 
+                
+                // Enter key for selection (in question state) or action (in feedback/results state)
+                else if (event.key === 'Enter') {
+                    event.preventDefault();
+                    if (quizState === 'question' && keyboardSelectedIndex !== -1) {
+                        // 1. Select the currently focused option and transition to feedback state
+                        window.selectOption(currentQuizData.questions[currentQuestionIndex].id, keyboardSelectedIndex);
+                    } else if ((quizState === 'feedback' || quizState === 'results') && !elements.actionButton.disabled) {
+                        // 2. Trigger the action button (Next Question / View Results / Change Set)
+                        window.handleAction();
+                    }
+                }
+            }
+
+            // 2. ADMIN MODE KEYBINDINGS (Escape to close edit modal)
+            if (elements.editModalOverlay && !elements.editModalOverlay.classList.contains('hidden')) {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    window.closeEditModal();
+                }
+            }
+        });
+
+
+        // --- START APPLICATION ---
+        window.onload = initializeFirebase;
+
+        // ADMIN BUTTON LISTENER NOW USES safeNavigate
+        document.getElementById('admin-mode-btn').addEventListener('click', () => {
+            const target = currentPage === 'admin' ? 'home' : 'admin';
+            safeNavigate(target);
+        });
+    </script>
+</body>
+</html>
